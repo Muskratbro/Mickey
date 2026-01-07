@@ -9,5 +9,6 @@ window.level1 = {
         {x: 250, y: 200, width: 20, height: 150},
         {x: 150, y: 350, width: 300, height: 20}
     ],
+    text: "You are awake late at night, thinking about what happened... donald is dead. because of YOU.",
     nextLevel: null
 };
