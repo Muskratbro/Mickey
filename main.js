@@ -131,7 +131,7 @@ function update() {
         }
     }
 
-    // Bottom-of-screen level transition
+    // Bottom-of-screen level transition (instant, no flash)
     if (player.y + player.height >= canvas.height) {
         if (currentLevel.nextLevel) {
             loadLevel(currentLevel.nextLevel);
