@@ -9,6 +9,5 @@ window.level1 = {
         {x: 250, y: 200, width: 20, height: 150},
         {x: 150, y: 350, width: 300, height: 20}
     ],
-    text: "*you are in the Dark, Dank city at 3:00AM... You could not sleep.",
     nextLevel: null
 };
