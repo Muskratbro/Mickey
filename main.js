@@ -82,6 +82,13 @@ function draw() {
     // Draw player (Mickey as red block)
     ctx.fillStyle = "red";
     ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Draw level text (permanent)
+    if(currentLevel.text){
+        ctx.fillStyle = "white";
+        ctx.font = "20px Arial";
+        ctx.fillText(currentLevel.text, 30, 30);
+    }
 }
 
 // Game loop
