@@ -12,5 +12,6 @@ window.level2 = {
         {x: 200, y: 250, width: 20, height: 150},   // vertical middle obstacle
         {x: 150, y: 380, width: 350, height: 20}    // horizontal bottom obstacle
     ],
+    text: "You try not to think about what happened yesterday... too painfull. But it is impossible to resist. Donald Is dead. and its all my fault."
     nextLevel: null // will be automatically linked in index.html
 };
