@@ -35,7 +35,7 @@ const mickeySprites = {
 };
 
 // Assign frame sources (update with your actual file paths)
-mickeySprites.down[0].src = "assets/mickey/mickey_down_1.png";
+mickeySprites.down[0].src = "frame_003 (2).png";
 mickeySprites.down[1].src = "assets/mickey/mickey_down_2.png";
 mickeySprites.up[0].src = "assets/mickey/mickey_up_1.png";
 mickeySprites.up[1].src = "assets/mickey/mickey_up_2.png";
