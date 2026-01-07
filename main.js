@@ -182,6 +182,6 @@ function startGame() {
         loadLevel(window.level1);
         gameLoop();
     } else {
-        console.error("Level1.js not loaded!");
+        console.error("Level1.js not loaded! lol");
     }
 }
