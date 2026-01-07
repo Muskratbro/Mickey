@@ -14,6 +14,22 @@ const player = {
 // Current level
 let currentLevel = null;
 
+// Flash Donald image for 2 seconds
+function flashDonald(callback) {
+    const img = document.getElementById("donaldDead");
+    if (!img) {
+        callback();
+        return;
+    }
+
+    img.style.display = "block"; // show image
+
+    setTimeout(() => {
+        img.style.display = "none"; // hide after 2 seconds
+        callback(); // continue to next level
+    }, 2000);
+}
+
 // Load level function
 function loadLevel(level) {
     currentLevel = level;
@@ -68,7 +84,14 @@ function update() {
     // Check bottom level transition
     if (player.y + player.height >= canvas.height) {
         if (currentLevel.nextLevel) {
-            loadLevel(currentLevel.nextLevel);
+            // Special flash for level1 → level2
+            if (currentLevel === window.level1 && currentLevel.nextLevel === window.level2) {
+                flashDonald(() => {
+                    loadLevel(currentLevel.nextLevel);
+                });
+            } else {
+                loadLevel(currentLevel.nextLevel);
+            }
         } else {
             console.log("No next level defined!");
         }
