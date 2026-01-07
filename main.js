@@ -8,7 +8,11 @@ const player = {
     y: 50,
     width: 32,
     height: 32,
-    speed: 2
+    speed: 2,
+    direction: "down",     // current movement direction
+    frameIndex: 0,         // which frame of walking animation
+    frameCounter: 0,       // counter to control frame change
+    moving: false          // is player currently moving
 };
 
 // Guard shooting directions (UP → RIGHT → DOWN → LEFT)
@@ -22,11 +26,32 @@ const guardDirections = [
 // Current level
 let currentLevel = null;
 
+// Load Mickey sprites (2 frames per direction)
+const mickeySprites = {
+    down: [new Image(), new Image()],
+    up: [new Image(), new Image()],
+    left: [new Image(), new Image()],
+    right: [new Image(), new Image()]
+};
+
+// Assign frame sources (update with your actual file paths)
+mickeySprites.down[0].src = "assets/mickey/mickey_down_1.png";
+mickeySprites.down[1].src = "assets/mickey/mickey_down_2.png";
+mickeySprites.up[0].src = "assets/mickey/mickey_up_1.png";
+mickeySprites.up[1].src = "assets/mickey/mickey_up_2.png";
+mickeySprites.left[0].src = "assets/mickey/mickey_left_1.png";
+mickeySprites.left[1].src = "assets/mickey/mickey_left_2.png";
+mickeySprites.right[0].src = "assets/mickey/mickey_right_1.png";
+mickeySprites.right[1].src = "assets/mickey/mickey_right_2.png";
+
 // Load level function
 function loadLevel(level) {
     currentLevel = level;
     player.x = level.startX;
     player.y = level.startY;
+    player.frameIndex = 0;
+    player.frameCounter = 0;
+    player.moving = false;
 
     // Reset guard bullets & timers
     if (currentLevel.guards) {
@@ -37,7 +62,7 @@ function loadLevel(level) {
         }
     }
 
-    // Update HTML text
+    // Update HTML text if any
     const levelText = document.getElementById("levelText");
     if (levelText && level.text) {
         levelText.innerText = level.text;
@@ -61,23 +86,23 @@ function isColliding(rect1, rect2) {
 function update() {
     let newX = player.x;
     let newY = player.y;
+    player.moving = false;
 
-    if (keys["ArrowUp"] || keys["w"]) newY -= player.speed;
-    if (keys["ArrowDown"] || keys["s"]) newY += player.speed;
-    if (keys["ArrowLeft"] || keys["a"]) newX -= player.speed;
-    if (keys["ArrowRight"] || keys["d"]) newX += player.speed;
+    // Movement input
+    if (keys["ArrowUp"] || keys["w"]) { newY -= player.speed; player.direction = "up"; player.moving = true; }
+    if (keys["ArrowDown"] || keys["s"]) { newY += player.speed; player.direction = "down"; player.moving = true; }
+    if (keys["ArrowLeft"] || keys["a"]) { newX -= player.speed; player.direction = "left"; player.moving = true; }
+    if (keys["ArrowRight"] || keys["d"]) { newX += player.speed; player.direction = "right"; player.moving = true; }
 
     // Wall collision
     const tempPlayer = { ...player, x: newX, y: newY };
     let collision = false;
-
     for (const wall of currentLevel.walls) {
         if (isColliding(tempPlayer, wall)) {
             collision = true;
             break;
         }
     }
-
     if (!collision) {
         player.x = newX;
         player.y = newY;
@@ -87,14 +112,10 @@ function update() {
     if (currentLevel.guards) {
         for (const guard of currentLevel.guards) {
             guard.timer++;
-
-            // Fire every 60 frames
             if (guard.timer >= 60) {
                 guard.timer = 0;
-
                 const dir = guardDirections[guard.shootIndex];
                 guard.shootIndex = (guard.shootIndex + 1) % 4;
-
                 guard.bullets.push({
                     x: guard.x + 16,
                     y: guard.y + 16,
@@ -108,36 +129,33 @@ function update() {
             guard.bullets = guard.bullets.filter(bullet => {
                 bullet.x += bullet.vx;
                 bullet.y += bullet.vy;
-
-                // Bullet hits player → reset level
-                if (isColliding(player, {
-                    x: bullet.x,
-                    y: bullet.y,
-                    width: bullet.size,
-                    height: bullet.size
-                })) {
+                if (isColliding(player, {x: bullet.x, y: bullet.y, width: bullet.size, height: bullet.size})) {
                     loadLevel(currentLevel);
                     return false;
                 }
-
-                // Remove off-screen bullets
-                return (
-                    bullet.x > 0 &&
-                    bullet.y > 0 &&
-                    bullet.x < canvas.width &&
-                    bullet.y < canvas.height
-                );
+                return bullet.x > 0 && bullet.y > 0 && bullet.x < canvas.width && bullet.y < canvas.height;
             });
         }
     }
 
-    // Bottom-of-screen level transition (instant, no flash)
+    // Bottom-of-screen level transition
     if (player.y + player.height >= canvas.height) {
         if (currentLevel.nextLevel) {
             loadLevel(currentLevel.nextLevel);
         } else {
             console.log("No next level defined!");
         }
+    }
+
+    // Walking animation (only animate if moving)
+    if (player.moving) {
+        player.frameCounter++;
+        if (player.frameCounter >= 10) { // change frame every 10 updates
+            player.frameIndex = (player.frameIndex + 1) % 2; // toggle between 2 frames
+            player.frameCounter = 0;
+        }
+    } else {
+        player.frameIndex = 0; // standing frame
     }
 }
 
@@ -156,7 +174,6 @@ function draw() {
         for (const guard of currentLevel.guards) {
             ctx.fillStyle = "blue";
             ctx.fillRect(guard.x, guard.y, 32, 32);
-
             ctx.fillStyle = "yellow";
             for (const bullet of guard.bullets) {
                 ctx.fillRect(bullet.x, bullet.y, bullet.size, bullet.size);
@@ -164,9 +181,9 @@ function draw() {
         }
     }
 
-    // Draw player (Mickey)
-    ctx.fillStyle = "red";
-    ctx.fillRect(player.x, player.y, player.width, player.height);
+    // Draw player (Mickey) using sprites
+    const img = mickeySprites[player.direction][player.frameIndex];
+    ctx.drawImage(img, player.x, player.y, player.width, player.height);
 }
 
 // Game loop
