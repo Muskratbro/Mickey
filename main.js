@@ -11,30 +11,31 @@ const player = {
     speed: 2
 };
 
+// Guard shooting directions (UP → RIGHT → DOWN → LEFT)
+const guardDirections = [
+    { x: 0, y: -1 },
+    { x: 1, y: 0 },
+    { x: 0, y: 1 },
+    { x: -1, y: 0 }
+];
+
 // Current level
 let currentLevel = null;
-
-// Flash Donald image for 2 seconds
-function flashDonald(callback) {
-    const img = document.getElementById("donaldDead");
-    if (!img) {
-        callback();
-        return;
-    }
-
-    img.style.display = "block"; // show image
-
-    setTimeout(() => {
-        img.style.display = "none"; // hide after 2 seconds
-        callback(); // continue to next level
-    }, 2000);
-}
 
 // Load level function
 function loadLevel(level) {
     currentLevel = level;
     player.x = level.startX;
     player.y = level.startY;
+
+    // Reset guard bullets & timers
+    if (currentLevel.guards) {
+        for (const guard of currentLevel.guards) {
+            guard.timer = 0;
+            guard.shootIndex = guard.shootIndex || 0;
+            guard.bullets = [];
+        }
+    }
 
     // Update HTML text
     const levelText = document.getElementById("levelText");
@@ -56,7 +57,7 @@ function isColliding(rect1, rect2) {
            rect1.y + rect1.height > rect2.y;
 }
 
-// Update player movement
+// Update player + guards
 function update() {
     let newX = player.x;
     let newY = player.y;
@@ -66,9 +67,10 @@ function update() {
     if (keys["ArrowLeft"] || keys["a"]) newX -= player.speed;
     if (keys["ArrowRight"] || keys["d"]) newX += player.speed;
 
-    // Check collisions
-    const tempPlayer = {...player, x: newX, y: newY};
+    // Wall collision
+    const tempPlayer = { ...player, x: newX, y: newY };
     let collision = false;
+
     for (const wall of currentLevel.walls) {
         if (isColliding(tempPlayer, wall)) {
             collision = true;
@@ -81,17 +83,58 @@ function update() {
         player.y = newY;
     }
 
-    // Check bottom level transition
+    // Guard logic (stationary)
+    if (currentLevel.guards) {
+        for (const guard of currentLevel.guards) {
+            guard.timer++;
+
+            // Fire every 60 frames
+            if (guard.timer >= 60) {
+                guard.timer = 0;
+
+                const dir = guardDirections[guard.shootIndex];
+                guard.shootIndex = (guard.shootIndex + 1) % 4;
+
+                guard.bullets.push({
+                    x: guard.x + 16,
+                    y: guard.y + 16,
+                    vx: dir.x * 3,
+                    vy: dir.y * 3,
+                    size: 6
+                });
+            }
+
+            // Update bullets
+            guard.bullets = guard.bullets.filter(bullet => {
+                bullet.x += bullet.vx;
+                bullet.y += bullet.vy;
+
+                // Bullet hits player → reset level
+                if (isColliding(player, {
+                    x: bullet.x,
+                    y: bullet.y,
+                    width: bullet.size,
+                    height: bullet.size
+                })) {
+                    loadLevel(currentLevel);
+                    return false;
+                }
+
+                // Remove off-screen bullets
+                return (
+                    bullet.x > 0 &&
+                    bullet.y > 0 &&
+                    bullet.x < canvas.width &&
+                    bullet.y < canvas.height
+                );
+            });
+        }
+    }
+
+    // Bottom-of-screen level transition
     if (player.y + player.height >= canvas.height) {
         if (currentLevel.nextLevel) {
-            // Special flash for level1 → level2
-            if (currentLevel === window.level1 && currentLevel.nextLevel === window.level2) {
-                flashDonald(() => {
-                    loadLevel(currentLevel.nextLevel);
-                });
-            } else {
-                loadLevel(currentLevel.nextLevel);
-            }
+            loadLevel(currentLevel.nextLevel);
         } else {
             console.log("No next level defined!");
         }
@@ -108,7 +151,20 @@ function draw() {
         ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
     }
 
-    // Draw player (Mickey as red block)
+    // Draw guards
+    if (currentLevel.guards) {
+        for (const guard of currentLevel.guards) {
+            ctx.fillStyle = "blue";
+            ctx.fillRect(guard.x, guard.y, 32, 32);
+
+            ctx.fillStyle = "yellow";
+            for (const bullet of guard.bullets) {
+                ctx.fillRect(bullet.x, bullet.y, bullet.size, bullet.size);
+            }
+        }
+    }
+
+    // Draw player (Mickey)
     ctx.fillStyle = "red";
     ctx.fillRect(player.x, player.y, player.width, player.height);
 }
@@ -120,7 +176,7 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// Start game after levels are loaded
+// Start game
 function startGame() {
     if (window.level1) {
         loadLevel(window.level1);
