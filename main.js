@@ -11,15 +11,15 @@ const player = {
     speed: 2
 };
 
-// Simple map (walls as rectangles)
-const walls = [
-    {x: 0, y: 0, width: 640, height: 20},       // top wall
-    {x: 0, y: 460, width: 640, height: 20},     // bottom wall
-    {x: 0, y: 0, width: 20, height: 480},       // left wall
-    {x: 620, y: 0, width: 20, height: 480},     // right wall
-    {x: 200, y: 100, width: 200, height: 20},   // inner obstacle
-    {x: 100, y: 250, width: 20, height: 150}    // another obstacle
-];
+// Current level
+let currentLevel = null;
+
+// Load level function
+function loadLevel(level) {
+    currentLevel = level;
+    player.x = level.startX;
+    player.y = level.startY;
+}
 
 // Key state
 const keys = {};
@@ -47,7 +47,7 @@ function update() {
     // Check collisions
     const tempPlayer = {...player, x: newX, y: newY};
     let collision = false;
-    for (const wall of walls) {
+    for (const wall of currentLevel.walls) {
         if (isColliding(tempPlayer, wall)) {
             collision = true;
             break;
@@ -58,6 +58,15 @@ function update() {
         player.x = newX;
         player.y = newY;
     }
+
+    // Check bottom level transition
+    if (player.y + player.height >= canvas.height) {
+        if (currentLevel.nextLevel) {
+            loadLevel(currentLevel.nextLevel);
+        } else {
+            console.log("No next level defined!");
+        }
+    }
 }
 
 // Draw everything
@@ -66,7 +75,7 @@ function draw() {
 
     // Draw walls
     ctx.fillStyle = "#333";
-    for (const wall of walls) {
+    for (const wall of currentLevel.walls) {
         ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
     }
 
@@ -82,6 +91,12 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// Start the game
-gameLoop();
-
+// Start game after levels are loaded
+function startGame() {
+    if (window.level1) {
+        loadLevel(window.level1);
+        gameLoop();
+    } else {
+        console.error("Level1.js not loaded!");
+    }
+}
